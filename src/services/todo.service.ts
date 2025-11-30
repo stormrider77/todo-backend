@@ -9,3 +9,16 @@ export const createTodo = (data: { title: string }) => {
     data,
   });
 };
+
+export const updateTodo = (id: number, data: { title?: string; description?: string; completed?: boolean }) => {
+  return prisma.todo.update({
+    where: { id },
+    data,
+  });
+};
+
+export const deleteTodo = (id: number) => {
+  return prisma.todo.delete({
+    where: { id },
+  });
+};

@@ -7,6 +7,7 @@ export interface AuthRequest extends Request {
     id: number;
     email: string;
     name: string | null;
+    role: string;
   };
 }
 
@@ -36,6 +37,7 @@ export const authenticate = async (
         id: true,
         email: true,
         name: true,
+        role: true,
       },
     });
 

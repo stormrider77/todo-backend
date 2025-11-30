@@ -9,6 +9,8 @@ export interface SignUpData {
   email: string;
   password: string;
   name?: string;
+  username?: string;
+  role?: "USER" | "ADMIN";
 }
 
 export interface SignInData {
@@ -17,9 +19,8 @@ export interface SignInData {
 }
 
 export const signUp = async (data: SignUpData) => {
-  const { email, password, name } = data;
+  const { email, password, name, username, role } = data;
 
-  // Check if user already exists
   const existingUser = await prisma.user.findUnique({
     where: { email },
   });
@@ -28,37 +29,35 @@ export const signUp = async (data: SignUpData) => {
     throw new Error("User with this email already exists");
   }
 
-  // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
-
-  // Create user
+  
   const user = await prisma.user.create({
     data: {
       email,
       password: hashedPassword,
       name: name || null,
+      username: username || null,
+      role: role || "USER",
     },
     select: {
       id: true,
       email: true,
       name: true,
+      username: true,
+      role: true,
       createdAt: true,
     },
   });
-
-  // Generate JWT token
+  
   const token = jwt.sign(
-    { userId: user.id, email: user.email },
+    { userId: user.id, email: user.email, username: user.username, role: user.role },
     JWT_SECRET,
     {
       expiresIn: JWT_EXPIRES_IN,
     } as jwt.SignOptions
   );
 
-  return {
-    user,
-    token,
-  };
+  return {user,token};
 };
 
 export const signIn = async (data: SignInData) => {
@@ -82,7 +81,7 @@ export const signIn = async (data: SignInData) => {
 
   // Generate JWT token
   const token = jwt.sign(
-    { userId: user.id, email: user.email },
+    { userId: user.id, email: user.email, role: user.role },
     JWT_SECRET,
     {
       expiresIn: JWT_EXPIRES_IN,
@@ -94,6 +93,7 @@ export const signIn = async (data: SignInData) => {
       id: user.id,
       email: user.email,
       name: user.name,
+      role: user.role,
       createdAt: user.createdAt,
     },
     token,
@@ -102,7 +102,11 @@ export const signIn = async (data: SignInData) => {
 
 export const verifyToken = (token: string) => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { 
+      userId: number; 
+      email: string; 
+      role?: string;
+    };
     return decoded;
   } catch (error) {
     throw new Error("Invalid or expired token");
