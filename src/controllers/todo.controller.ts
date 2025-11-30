@@ -14,9 +14,13 @@ export const createTodo = async (req: Request, res: Response) => {
 export const updateTodo = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const todo = await todoService.updateTodo(parseInt(id), req.body);
+    const { userId } = req.body;
+    const todo = await todoService.updateTodo(parseInt(id), userId, req.body);
     res.json(todo);
   } catch (error: any) {
+    if (error.message === "Todo not found or has been deleted") {
+      return res.status(404).json({ error: error.message });
+    }
     if (error.code === "P2025") {
       return res.status(404).json({ error: "Todo not found" });
     }
@@ -27,8 +31,12 @@ export const updateTodo = async (req: Request, res: Response) => {
 export const deleteTodo = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await todoService.deleteTodo(parseInt(id));
-    res.status(204).send();
+    const { userId } = req.body;
+    const todo = await todoService.deleteTodo(parseInt(id), userId);
+    res.status(200).json({ 
+      message: "Todo deleted successfully",
+      todo 
+    });
   } catch (error: any) {
     if (error.code === "P2025") {
       return res.status(404).json({ error: "Todo not found" });
